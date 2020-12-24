@@ -25,29 +25,12 @@
       <v-container>
         <v-layout>
             <v-expansion-panels :value="panels" multiple>
-              <v-expansion-panel
-                  v-for="group in formattedData"
-                  :key="group.id"
-              >
-                <v-expansion-panel-header>
-                  {{ group.title }}
-                </v-expansion-panel-header>
-                <v-expansion-panel-content>
-                  <v-data-table
-                      :items="group.items"
-                      item-key="id"
-                      hide-default-header
-                      hide-default-footer
-                  >
-                    <template slot='item' slot-scope="{item}">
-                      <tr @click="selectItem(item)">
-                        <td>{{ `${item.name} (${item.maxQuantity})` }}</td>
-                        <td class="text-right">{{ formatPrice(item.price) }}</td>
-                      </tr>
-                    </template>
-                  </v-data-table>
-                </v-expansion-panel-content>
-              </v-expansion-panel>
+                <expansion-panel
+                    v-for="group in formattedData"
+                    :key="group.id"
+                    :group="group"
+                    @select="selectItem"
+                />
             </v-expansion-panels>
           <div v-if="showBasket" class="basket">
             <basket :items="selectedItems" @remove="selectItem"/>
@@ -62,41 +45,52 @@
 import data from '@/data/data.json'
 import names from '@/data/names.json'
 import Basket from '@/components/Basket'
+import ExpansionPanel from '@/components/ExpansionPanel'
 
 const COURSE = 80
+const DEFAULT_QUANTITY = 1
 
 export default {
   name: 'App',
 
-  components: {Basket},
+  components: {Basket, ExpansionPanel},
 
   data: () => ({
     course: COURSE,
     data: data,
     names: names,
     showBasket: false,
-    panels: [0,1,2,3,4,5,6,7],
+    panels: [],
     formattedData: [],
     selectedItems: [],
+    intervalId: null,
   }),
   mounted() {
-    this.formatData()
+    this.fetchData()
+
+    this.intervalId = setInterval(() => {
+      this.course = this.getRandomInt(20, 80)
+      this.fetchData()
+    }, 15000)
+  },
+  beforeDestroy() {
+    clearInterval(this.intervalId)
   },
   computed: {
     counterSelectedItems() {
       return this.selectedItems.length
     },
-    openedPanels() {
-      return this.formattedData.length
-    }
   },
   methods: {
     convertToRub(price) {
       return (price * this.course).toFixed(2)
     },
-    formatPrice(convertedPrice){
-      const price = convertedPrice.toLocaleString('ru-RU')
-      return `${price}р.`
+    async fetchData() {
+      try {
+        await this.formatData()
+      } catch (e) {
+        console.log(e)
+      }
     },
     formatData() {
       const data = this.data?.['Value']?.['Goods'] ?? []
@@ -107,6 +101,7 @@ export default {
           items: this.translateGroupItems(group.id, group.items)
         }
       })
+      this.panels = this.formattedData.map((_, index) => index)
     },
     groupedArray(array) {
       let result = {}
@@ -135,18 +130,21 @@ export default {
     },
     translateGroupItems(groupId, array) {
       return array.map(item => {
+        const usdPrice = Math.random() * item.C
+        const itemId = item.T
+        const maxQuantity = item.P
         return {
           id: item.T,
-          name: this.getItemName(groupId, item.T),
-          price: this.convertToRub(item.C),
-          usdPrice: item.C,
-          maxQuantity: item.P,
-          quantity: 1
+          name: this.getItemName(groupId, itemId),
+          price: this.convertToRub(usdPrice),
+          usdPrice: usdPrice,
+          maxQuantity:maxQuantity,
+          quantity: DEFAULT_QUANTITY
         }
       })
     },
     getItemName(groupId, itemId) {
-      return this.names[groupId].B[itemId].N
+      return this.names[groupId]?.B[itemId]?.N ?? 'Неопознаный енот'
     },
     selectItem(item) {
       if (this.selectedItems.some(selectedItem => selectedItem.id === item.id)) {
@@ -162,6 +160,9 @@ export default {
           price: this.convertToRub(selectedItem.usdPrice)
         }
       })
+    },
+    getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min) ) + min
     }
   },
   watch: {

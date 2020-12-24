@@ -39,6 +39,7 @@
   </v-card>
 </template>
 <script>
+import { formatPrice } from '@/helpers/formatPrice'
 export default {
   name: 'Basket',
 
@@ -56,10 +57,7 @@ export default {
     },
   },
   methods: {
-    formatPrice(price){
-      const formatedPrice = price.toLocaleString('ru-RU')
-      return `${formatedPrice}р.`
-    },
+    formatPrice
   },
 };
 </script>
