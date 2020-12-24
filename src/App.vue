@@ -24,7 +24,7 @@
     <v-main>
       <v-container>
         <v-layout>
-            <v-expansion-panels v-model="panels" multiple>
+            <v-expansion-panels :value="panels" multiple>
               <v-expansion-panel
                   v-for="group in formattedData"
                   :key="group.id"
@@ -85,6 +85,9 @@ export default {
   computed: {
     counterSelectedItems() {
       return this.selectedItems.length
+    },
+    openedPanels() {
+      return this.formattedData.length
     }
   },
   methods: {
@@ -136,6 +139,7 @@ export default {
           id: item.T,
           name: this.getItemName(groupId, item.T),
           price: this.convertToRub(item.C),
+          usdPrice: item.C,
           maxQuantity: item.P,
           quantity: 1
         }
@@ -151,10 +155,19 @@ export default {
         this.selectedItems.push(item)
       }
     },
+    updatePrice() {
+      this.selectedItems = this.selectedItems.map(selectedItem => {
+        return {
+          ...selectedItem,
+          price: this.convertToRub(selectedItem.usdPrice)
+        }
+      })
+    }
   },
   watch: {
     course() {
       this.formatData()
+      this.updatePrice()
     }
   }
 };
