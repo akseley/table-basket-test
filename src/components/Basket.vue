@@ -5,7 +5,7 @@
     </v-card-title>
     <v-card-text>
       <v-data-table
-          :items="items"
+          :items="selectedItems"
           item-key="id"
           hide-default-header
           hide-default-footer
@@ -22,7 +22,7 @@
               />
             </td>
             <td>
-              {{ formatPrice(item.price)}}
+              {{ convertPriceToRub(item.price)}}
             </td>
             <td>
               <v-btn @click="$emit('remove', item)">
@@ -40,24 +40,24 @@
 </template>
 <script>
 import { formatPrice } from '@/helpers/formatPrice'
+import {mapGetters} from "vuex";
+import {convertToRub} from "@/helpers/convertToRub";
 export default {
   name: 'Basket',
 
-  props: {
-    items: {
-      type: Array,
-      required: true
-    }
-  },
-
   computed: {
+    ...mapGetters(['selectedItems', "course"]),
     total() {
-      const total = this.items.reduce((sum, item) => sum + Number(item.price * item.quantity), 0).toFixed(2)
+      const total = this.selectedItems.reduce((sum, item) => sum + Number(convertToRub(item.price, this.course ) * item.quantity), 0).toFixed(2)
       return this.formatPrice(total)
     },
   },
   methods: {
-    formatPrice
+    formatPrice,
+    convertPriceToRub(price) {
+      const convertedPrice = convertToRub(price, this.course)
+      return formatPrice(convertedPrice)
+    },
   },
 };
 </script>
